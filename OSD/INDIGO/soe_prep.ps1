@@ -32,4 +32,22 @@ Set-Culture en-AU -Verbose
 Copy-UserInternationalSettingsToSystem -WelcomeScreen $True -NewUser $True
 
 
+#Sync Intune
+Get-ScheduledTask | where {$_.TaskName -eq 'PushLaunch'} | Start-ScheduledTask -Verbose
 
+
+$interval = 20
+$run = $true
+$counter = 0
+$serviceName = "RDAgentBootLoader"
+do {
+    Start-Sleep -Seconds $interval
+    $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+    if ($null -ne $service -and $service.Status -ne [System.ServiceProcess.ServiceControllerStatus](4)) {
+        Write-Host "Starting service: $serviceName"
+        Start-Service -Name $serviceName -ErrorAction SilentlyContinue
+    }
+    $counter++
+    if ($counter -gt 10) { $interval = 90 }
+    if ($counter -gt 20) { $run = $false }
+} while ($run)
